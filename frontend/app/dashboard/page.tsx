@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AudioModeSelector } from '@/components/audio-mode-selector';
 import { RecordingControls } from '@/components/recording-controls';
 import { useRecordingStore } from '@/lib/store';
-
+import { TranscriptFeed } from '@/components/transcript-feed';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
@@ -30,7 +30,9 @@ export default function DashboardPage() {
           <RecordingControls />
         </div>
 
-  
+        <div className="lg:col-span-2 h-[calc(100vh-12rem)]">
+          <TranscriptFeed />
+        </div>
       </div>
     </div>
   );
