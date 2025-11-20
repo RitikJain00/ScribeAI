@@ -12,13 +12,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();   // 👈 Add this
+  const [mounted, setMounted] = useState(false); // 👈 to fix hydration
   const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const user = localStorage.getItem('scribeai_user');
@@ -38,24 +42,40 @@ export function Navbar() {
     return email.charAt(0).toUpperCase();
   };
 
+  // 👇 Extract page name dynamically
+  const pageTitle = (() => {
+    if (!pathname) return '';
+
+    if (pathname.startsWith('/dashboard')) return 'Dashboard';
+    if (pathname.startsWith('/sessions')) return 'Sessions';
+    if (pathname.startsWith('/profile')) return 'Profile';
+
+    return 'Dashboard';
+  })();
+
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
+        <h1 className="text-2xl font-semibold text-foreground">
+          {pageTitle}
+        </h1>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-          {theme === 'dark' ? (
-            <Sun className="w-5 h-5" />
-          ) : (
-            <Moon className="w-5 h-5" />
-          )}
-        </Button>
+        {/* 👇 Prevent hydration mismatch for theme toggle */}
+        {mounted && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+          </Button>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -65,6 +85,7 @@ export function Navbar() {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col">
@@ -72,12 +93,16 @@ export function Navbar() {
                 <span className="text-xs text-muted-foreground">{userEmail}</span>
               </div>
             </DropdownMenuLabel>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem onClick={() => router.push('/profile')}>
               <User className="w-4 h-4 mr-2" />
               Profile
             </DropdownMenuItem>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem onClick={handleLogout}>
               Logout
             </DropdownMenuItem>

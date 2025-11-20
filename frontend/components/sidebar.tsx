@@ -13,7 +13,7 @@ export function Sidebar() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
 
-  // 👇 FIX FOR HYDRATION ERROR
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -64,7 +64,7 @@ export function Sidebar() {
       </nav>
 
       <div className="p-3 space-y-1 border-t border-sidebar-border">
-        {/* 👇 Render only after mounted to avoid hydration mismatch */}
+       
         {mounted && (
           <Button
             variant="ghost"
