@@ -29,7 +29,7 @@ export default function SessionsPage() {
 
   useEffect(() => {
     // Check authentication
-    const token = localStorage.getItem('scribeai_token');
+    const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
       return;

@@ -11,7 +11,7 @@ export function TranscriptFeed() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Auto-scroll to bottom when new transcript arrives
+    // Auto-scroll to bottom whenever transcript updates
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -20,25 +20,19 @@ export function TranscriptFeed() {
   return (
     <Card className="flex flex-col h-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <div>
             <CardTitle>Live Transcript</CardTitle>
-            <CardDescription>
-              Real-time transcription of your recording
-            </CardDescription>
+            <CardDescription>Real-time transcription of your recording</CardDescription>
           </div>
           {status === 'recording' && (
-            <Badge variant="default" className="bg-success text-success-foreground">
-              <span className="w-2 h-2 rounded-full bg-success-foreground mr-2 recording-pulse" />
+            <Badge variant="default" className="bg-success text-success-foreground flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-success-foreground animate-pulse" />
               Recording
             </Badge>
           )}
-          {status === 'paused' && (
-            <Badge variant="secondary">Paused</Badge>
-          )}
-          {status === 'processing' && (
-            <Badge variant="secondary">Processing</Badge>
-          )}
+          {status === 'paused' && <Badge variant="secondary">Paused</Badge>}
+          {status === 'processing' && <Badge variant="secondary">Processing</Badge>}
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
@@ -46,21 +40,17 @@ export function TranscriptFeed() {
           {transcript.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <p className="text-center">
-                {status === 'idle' 
+                {status === 'idle'
                   ? 'Start recording to see live transcription'
                   : 'Waiting for transcription...'}
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {transcript.map((line, index) => (
-                <div
-                  key={index}
-                  className="transcript-line p-3 rounded-lg bg-muted/50 border border-border"
-                >
-                  <p className="text-sm leading-relaxed text-foreground">{line}</p>
-                </div>
-              ))}
+            <div className="p-3 rounded-lg bg-muted/50 border border-border">
+              {/* Join all transcript lines into a paragraph */}
+              <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                {Array.isArray(transcript) ? transcript.join(' ') : transcript}
+              </p>
             </div>
           )}
         </ScrollArea>

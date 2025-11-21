@@ -7,12 +7,15 @@ import { AudioModeSelector } from "@/components/audio-mode-selector";
 import { RecordingControls } from "@/components/recording-controls";
 import { useRecordingStore } from "@/lib/store";
 import { TranscriptFeed } from "@/components/transcript-feed";
+import { getSocket, onTranscript, onProcessing, onCompleted } from '@/lib/socket';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { saveSession } from '@/lib/session-storage';
 
 export default function DashboardPage() {
+
   const router = useRouter();
-  const { error } = useRecordingStore();
+  const { error, addTranscriptLine, setStatus, transcript, audioMode, setCurrentSessionId } = useRecordingStore();
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
@@ -55,6 +58,50 @@ export default function DashboardPage() {
 
     verifyUser();
   }, [router]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    socket.connect();
+  
+    const unsubscribeTranscript = onTranscript((text) => {
+      console.log('[v0] Received transcript:', text);
+      addTranscriptLine(text);
+    });
+  
+    const unsubscribeProcessing = onProcessing(() => {
+      console.log('[v0] Processing started');
+      setStatus('processing');
+    });
+  
+    const unsubscribeCompleted = onCompleted(() => {
+      console.log('[v0] Processing completed');
+      setStatus('completed');
+  
+      const sessionId = `session_${Date.now()}`;
+      const finalTranscript = useRecordingStore.getState().transcript;
+  
+      const session = {
+        id: sessionId,
+        title: `Recording ${new Date().toLocaleDateString()}`,
+        timestamp: new Date(),
+        transcript: finalTranscript.join('\n'),
+        audioMode,
+      };
+  
+      saveSession(session);
+      setCurrentSessionId(sessionId);
+    });
+  
+    return () => {
+      unsubscribeTranscript();
+      unsubscribeProcessing();
+      unsubscribeCompleted();
+    };
+  }, [addTranscriptLine, setStatus, audioMode, setCurrentSessionId]);
+  
+
+
+  
 
   if (loading) {
     return (
