@@ -18,8 +18,8 @@ export function Sidebar() {
   useEffect(() => setMounted(true), []);
 
   const handleLogout = () => {
-    localStorage.removeItem('scribeai_token');
-    localStorage.removeItem('scribeai_user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     router.push('/login');
   };
 

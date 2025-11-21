@@ -20,26 +20,26 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();   // 👈 Add this
   const [mounted, setMounted] = useState(false); // 👈 to fix hydration
-  const [userEmail, setUserEmail] = useState('');
+  const [name, setUserName] = useState('');
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    const user = localStorage.getItem('scribeai_user');
+    const user = localStorage.getItem('user');
     if (user) {
-      const parsed = JSON.parse(user);
-      setUserEmail(parsed.email || '');
+
+      setUserName(user);
     }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('scribeai_token');
-    localStorage.removeItem('scribeai_user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     router.push('/login');
   };
 
-  const getInitials = (email: string) => {
-    return email.charAt(0).toUpperCase();
+  const getInitials = (name: string) => {
+    return name.charAt(0).toUpperCase();
   };
 
   // 👇 Extract page name dynamically
@@ -81,7 +81,7 @@ export function Navbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar>
-                <AvatarFallback>{getInitials(userEmail)}</AvatarFallback>
+                <AvatarFallback>{getInitials(name)}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
@@ -90,7 +90,7 @@ export function Navbar() {
             <DropdownMenuLabel>
               <div className="flex flex-col">
                 <span className="text-sm font-medium">My Account</span>
-                <span className="text-xs text-muted-foreground">{userEmail}</span>
+                <span className="text-xs text-muted-foreground">{name}</span>
               </div>
             </DropdownMenuLabel>
 

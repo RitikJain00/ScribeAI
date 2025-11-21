@@ -13,6 +13,6 @@
     "skipLibCheck": true,
     "sourceMap": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src", "lib"],       // Only compile files in src
+  "exclude": ["node_modules", "dist", "prisma.config.js"] // ignore Prisma config
 }
