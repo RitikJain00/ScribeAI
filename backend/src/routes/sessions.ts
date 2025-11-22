@@ -1,6 +1,11 @@
 import express from 'express';
 import { prisma } from '../lib/prisma';
 import { verifyUser, AuthenticatedRequest } from '../middleware/authMiddleware';
+import { GoogleGenAI } from "@google/genai";
+
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY!,
+});
 
 const router = express.Router();
 
@@ -21,6 +26,7 @@ router.get("/", verifyUser, async (req: AuthenticatedRequest, res) => {
 });
 
 // Fetch single transcript with optional summary
+// Fetch single transcript with fullText and summary
 router.get("/:id", verifyUser, async (req: AuthenticatedRequest, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
@@ -28,19 +34,38 @@ router.get("/:id", verifyUser, async (req: AuthenticatedRequest, res) => {
   try {
     const transcript = await prisma.transcript.findUnique({
       where: { id },
-      include: { summary: true },
+      select: {
+        id: true,
+        title: true,
+        fullText: true,
+        createdAt: true,
+        summary: { select: { text: true } },
+        userId: true,
+      },
     });
 
     if (!transcript || transcript.userId !== userId) {
       return res.status(404).json({ error: "Transcript not found" });
     }
 
-    res.json(transcript);
+    // Flatten summary text for frontend
+    res.json({
+      id: transcript.id,
+      title: transcript.title,
+      fullText: transcript.fullText,
+      createdAt: transcript.createdAt,
+      summary: transcript.summary?.text || null,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch transcript" });
   }
 });
+
+
+// Generate/fetch summary
+
+
 
 // Generate/fetch summary
 router.post("/:id/summary", verifyUser, async (req: AuthenticatedRequest, res) => {
@@ -48,6 +73,7 @@ router.post("/:id/summary", verifyUser, async (req: AuthenticatedRequest, res) =
   const { id } = req.params;
 
   try {
+    // 1️⃣ Fetch transcript including summary
     const transcript = await prisma.transcript.findUnique({
       where: { id },
       include: { summary: true },
@@ -57,14 +83,28 @@ router.post("/:id/summary", verifyUser, async (req: AuthenticatedRequest, res) =
       return res.status(404).json({ error: "Transcript not found" });
     }
 
-    // If summary exists, return it
+    // 2️⃣ If summary already exists → return it
     if (transcript.summary) {
       return res.json({ summary: transcript.summary.text });
     }
 
-    // Otherwise generate summary (pseudo Gemini API call)
-    const generatedSummary = `Summary for transcript "${transcript.title}"...`; // Replace with Gemini API call
+    // 3️⃣ Prompt for Gemini
+    const prompt = `Summarize the following transcript with all important key points:\n\n${transcript.fullText}`;
 
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    
+    const generatedSummary = response.text; // THIS IS THE CORRECT WAY
+
+    // 5️⃣ Validate summary
+    if (!generatedSummary || generatedSummary.trim().length < 5) {
+      return res.status(500).json({ error: "Summary generation failed" });
+    }
+
+    // 6️⃣ Save summary to DB
     const newSummary = await prisma.summary.create({
       data: {
         userId,
@@ -73,11 +113,13 @@ router.post("/:id/summary", verifyUser, async (req: AuthenticatedRequest, res) =
       },
     });
 
-    res.json({ summary: newSummary.text });
+    return res.json({ summary: newSummary.text });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to generate/fetch summary" });
+    console.error("GEMINI ERROR:", err);
+    return res.status(500).json({ error: "Failed to generate/fetch summary" });
   }
 });
+
 
 export default router;
