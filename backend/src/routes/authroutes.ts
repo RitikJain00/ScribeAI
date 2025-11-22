@@ -4,7 +4,7 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma"; // Make sure prisma is exported from here
-
+import { verifyUser, AuthenticatedRequest } from '../middleware/authMiddleware';
 const router = Router();
 
 /* ============================================================
@@ -108,22 +108,13 @@ interface JWTPayload {
 
 
 
-router.get("/me", async (req, res) => {
+router.get("/me",verifyUser, async (req: AuthenticatedRequest, res) => {
+  
+  const userId = req.user!.id;
+
   try {
-    const header = req.headers.authorization;
-
-    if (!header) return res.status(401).json({ error: "No token provided" });
-
-    const token = header.split(" ")[1];
-
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    ) as JWTPayload;
-    
-
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: userId },
       select: { id: true, name: true, email: true },
     });
 
