@@ -25,44 +25,22 @@ model Transcript {
   id        String   @id @default(uuid())
   userId    String
   title     String
-  fullText  String? // final combined transcript after session
+  fullText  String? // store entire transcript here
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chunks      TranscriptChunk[]
-  audioChunks AudioChunk[]
-  summary     Summary?
-}
-
-model TranscriptChunk {
-  id           String @id @default(uuid())
-  transcriptId String
-  text         String
-  startTime    Float?
-  endTime      Float?
-
-  transcript Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
-}
-
-model AudioChunk {
-  id           String @id @default(uuid())
-  transcriptId String
-  url          String // S3/local file storage
-  startTime    Float?
-  endTime      Float?
-
-  transcript Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id])
+  summary Summary? // link to generated summary
 }
 
 model Summary {
   id           String   @id @default(uuid())
   userId       String
-  transcriptId String   @unique // <-- FIX REQUIRED FOR 1:1 RELATION
+  transcriptId String   @unique
   text         String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  transcript Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transcript Transcript @relation(fields: [transcriptId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
 }

@@ -1,36 +1,37 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { parse } from "cookie";
 import { prisma } from "../lib/prisma";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
-
-// ✅ EXPORT this so routes can import it
-export interface AuthRequest extends Request {
-  user?: any;
+export interface AuthenticatedRequest extends Request {
+  user?: { id: string; email?: string };
 }
 
-export const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  let token;
-
-  if (req.headers.cookie) {
-    const cookies = parse(req.headers.cookie);
-    token = cookies.token;
-  }
-
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized: No token" });
-  }
-
+export const verifyUser = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const payload: any = jwt.verify(token, JWT_SECRET);
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authorization header missing or malformed" });
+    }
 
-    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-    if (!user) return res.status(401).json({ error: "Unauthorized: User not found" });
+    const token = authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Token missing" });
 
-    req.user = user; // ⬅️ attach user
+    const secret = process.env.JWT_SECRET!;
+    const decoded = jwt.verify(token, secret) as { id: string; email?: string };
+
+    if (!decoded.id) return res.status(401).json({ error: "Invalid token payload" });
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    req.user = { id: user.id, email: user.email };
     next();
-  } catch (e) {
-    return res.status(401).json({ error: "Unauthorized: Invalid token" });
+  } catch (err) {
+    console.error("Auth middleware error:", err);
+    return res.status(401).json({ error: "Unauthorized" });
   }
 };

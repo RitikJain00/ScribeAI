@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import authRoutes from "./routes/authroutes";
+import transcript from "./routes/transcript"
 import { createSocketServer } from "./socket/socket";
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(express.json());
 
 // REST Routes
 app.use("/api/auth", authRoutes);
+app.use('/api/transcript', transcript);
 
 const PORT = 4000;
 server.listen(PORT, () => {

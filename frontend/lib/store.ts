@@ -9,7 +9,7 @@ interface RecordingState {
   transcript: string[];
   currentSessionId: string | null;
   error: string | null;
-  
+
   setStatus: (status: RecordingStatus) => void;
   setAudioMode: (mode: AudioMode) => void;
   addTranscriptLine: (line: string) => void;
@@ -17,6 +17,7 @@ interface RecordingState {
   setCurrentSessionId: (id: string | null) => void;
   setError: (error: string | null) => void;
   reset: () => void;
+  setTranscript: (text: string | string[]) => void; // <- add this
 }
 
 export const useRecordingStore = create<RecordingState>((set) => ({
@@ -25,19 +26,25 @@ export const useRecordingStore = create<RecordingState>((set) => ({
   transcript: [],
   currentSessionId: null,
   error: null,
-  
+
   setStatus: (status) => set({ status }),
   setAudioMode: (mode) => set({ audioMode: mode }),
-  addTranscriptLine: (line) => set((state) => ({ 
-    transcript: [...state.transcript, line] 
+  addTranscriptLine: (line) => set((state) => ({
+    transcript: [...state.transcript, line],
   })),
   clearTranscript: () => set({ transcript: [] }),
   setCurrentSessionId: (id) => set({ currentSessionId: id }),
   setError: (error) => set({ error }),
-  reset: () => set({ 
-    status: 'idle', 
-    transcript: [], 
-    currentSessionId: null, 
-    error: null 
+  reset: () => set({
+    status: 'idle',
+    transcript: [],
+    currentSessionId: null,
+    error: null,
+  }),
+  
+  // ✅ Implement setTranscript
+  setTranscript: (text) => set({
+    transcript: Array.isArray(text) ? text : [text],
   }),
 }));
+
