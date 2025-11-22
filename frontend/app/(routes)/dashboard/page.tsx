@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,39 +10,29 @@ import { TranscriptFeed } from "@/components/transcript-feed";
 import { getSocket, onTranscript, onProcessing, onCompleted } from '@/lib/socket';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { saveSession } from '@/lib/session-storage';
 
 export default function DashboardPage() {
-
   const router = useRouter();
   const { error, addTranscriptLine, setStatus, transcript, audioMode, setCurrentSessionId } = useRecordingStore();
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
 
+  // --- Verify user ---
   useEffect(() => {
     const token = localStorage.getItem("token");
+    if (!token) return router.replace("/login");
 
-    // If no token → redirect to login
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
-
-    // Validate token with backend
     const verifyUser = async () => {
       try {
         const res = await fetch("http://localhost:4000/api/auth/me", {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!res.ok) {
           localStorage.removeItem("token");
-          router.replace("/login");
-          return;
+          return router.replace("/login");
         }
 
         const data = await res.json();
@@ -59,27 +49,19 @@ export default function DashboardPage() {
     verifyUser();
   }, [router]);
 
+  // --- Socket listeners for live transcription ---
   useEffect(() => {
     const socket = getSocket();
     socket.connect();
-  
-    const unsubscribeTranscript = onTranscript((text) => {
-      console.log('[v0] Received transcript:', text);
-      addTranscriptLine(text);
-    });
-  
-    const unsubscribeProcessing = onProcessing(() => {
-      console.log('[v0] Processing started');
-      setStatus('processing');
-    });
-  
+
+    const unsubscribeTranscript = onTranscript((text) => addTranscriptLine(text));
+    const unsubscribeProcessing = onProcessing(() => setStatus('processing'));
     const unsubscribeCompleted = onCompleted(() => {
-      console.log('[v0] Processing completed');
       setStatus('completed');
-  
+
       const sessionId = `session_${Date.now()}`;
       const finalTranscript = useRecordingStore.getState().transcript;
-  
+
       const session = {
         id: sessionId,
         title: `Recording ${new Date().toLocaleDateString()}`,
@@ -87,38 +69,21 @@ export default function DashboardPage() {
         transcript: finalTranscript.join('\n'),
         audioMode,
       };
-  
-      saveSession(session);
       setCurrentSessionId(sessionId);
     });
-  
+
     return () => {
       unsubscribeTranscript();
       unsubscribeProcessing();
       unsubscribeCompleted();
     };
   }, [addTranscriptLine, setStatus, audioMode, setCurrentSessionId]);
-  
 
-
-  
-
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <p className="text-muted-foreground text-lg">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="h-screen flex items-center justify-center"><p className="text-muted-foreground text-lg">Loading...</p></div>;
 
   return (
     <div className="h-full p-6 space-y-6">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 
       <div className="mb-4">
         <h2 className="text-xl font-semibold">Welcome, {user?.name}</h2>

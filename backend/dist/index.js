@@ -10,6 +10,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const authroutes_1 = __importDefault(require("./routes/authroutes"));
 const transcript_1 = __importDefault(require("./routes/transcript"));
+const sessions_1 = __importDefault(require("./routes/sessions"));
 const socket_1 = require("./socket/socket");
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
@@ -20,6 +21,7 @@ app.use(express_1.default.json());
 // REST Routes
 app.use("/api/auth", authroutes_1.default);
 app.use('/api/transcript', transcript_1.default);
+app.use('/api/sessions', sessions_1.default);
 const PORT = 4000;
 server.listen(PORT, () => {
     console.log(`HTTP server running at http://localhost:${PORT}`);

@@ -6,6 +6,7 @@ dotenv.config();
 
 import authRoutes from "./routes/authroutes";
 import transcript from "./routes/transcript"
+import sessions from "./routes/sessions"
 import { createSocketServer } from "./socket/socket";
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(express.json());
 // REST Routes
 app.use("/api/auth", authRoutes);
 app.use('/api/transcript', transcript);
+app.use('/api/sessions', sessions);
 
 const PORT = 4000;
 server.listen(PORT, () => {
